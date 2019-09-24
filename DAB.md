@@ -294,28 +294,6 @@ Status | Description
 501 | action not implemented
 
 
-### Sending a message to the application
-
-#### Request topic
-
-`dab/appLifecycle/message`
-
-#### Request format
-
-```typescript
-interface SendMessageRequest {
-	app: string;
-	type: string;
-	message: string;
-}
-```
-
-Parameter |  Description
---- | ---
-app | application ID
-type | message type
-message | Base64 encoded message
-
 ## System
 
 ### Device Information
