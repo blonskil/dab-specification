@@ -1,7 +1,7 @@
 
 # [DRAFT] Device Automation Bus (DAB)
 
-TODO: need a description of the protocol
+A common framework to automate non-Android living room devices for test purposes
 
 ## Version
 This document describes the protocol version **1.0**
@@ -37,7 +37,7 @@ In order to send a message to a request topic, the client needs to append the re
 
 If the client wants to send a message to the request topic `x/y/z`, it needs to generate a `<request_id>`. The client then needs to publish a message to the MQTT topic `x/y/z/<request_id>`.
 
-The response will be published to `_response/x/y/z/<request_id>` where `<request_id>` is always provided by the client.
+The response will be published to `_response/x/y/z/<request_id>`
 
 We recommend that UUID (version4 - random) is used for the request IDs.
 
@@ -51,15 +51,17 @@ mqtt.publish --topic 'dab/appLifecycle/list/## c0e1fb9d-03f9-4188-8350-5ba4acdea
 
 ## Unsolicited Messages / Notifications
 
-The device implementing the DAB protocol may publish unsolicited messages to the MQTT topics. These can be used to receive the updates about the changing state of a component on a device. These messages are published in a form of a retained message on the given topic. 
+The device implementing the DAB protocol will publish unsolicited messages to the MQTT topics. These can be used to receive the updates about the changing state of a component on a device. These messages are published in a form of a retained message on the specified topic. 
 
 ## Protocol Compliance
 
-In order for a device to be considered compliant with the protocol all operations need to be implemented. In some cases where the device limitations prevent from an operation to be implemented, the device still needs to handle the request and return the *not implemented* response.
+In order for a device to be considered compliant with the protocol all operations need to be implemented. In some cases where the device limitations prevent from an operation from being implemented, the device still needs to handle the request and return the *not implemented* response.
 
 ## Application Lifecycle
 
 The Application Lifecycle module is responsible for the lifecycle of the installed applications. There can only be one instance of an application running in the system and the instance is referenced by the application identifier. The protocol equips the devices with the telemetry capabilities that can be enabled during the application launch.
+
+TODO need to describe the application lifecycle
 
 ### Application Identifier
 
@@ -74,17 +76,19 @@ Lists all the installed applications on the device.
 `dab/appLifecycle/list`
 
 #### Request format
+
 ```typescript
 interface ListRequest {
 }
 ```
 
 #### Response format
+
 ```typescript
 interface ListResponse {
 	status: number;
 	error?: string;
-	apps: string[];
+	apps?: string[];
 }
 ```
 
@@ -92,7 +96,7 @@ Parameter | Description
 --- | ---
 status | status code
 error | *optional* description of the error
-apps | a list application identifiers
+apps | a list application identifiers, *required* when the operation is successful
 
 #### Statuses
 Status | Description
@@ -112,7 +116,6 @@ Status | Description
 	]
 }
 ```
-
 
 ### Launching an application
 
@@ -379,51 +382,25 @@ Error:
 
 ### Input
 
-There are two keyboard-like events: *key down* and *key up*. A *key press* can be achieved by sending *key down* and then *key up* events in sequence. 
+#### Key press
 
-#### Key down
+TODO: need to specify the list of keyCodes
 
 ##### Request topic
 
-`dab/system/input/key-down`
+`dab/system/input/key-press`
 
 ##### Request format
 ```typescript
-interface KeyDownRequest {
-	key: string;
-	altKey?: boolean;
-	ctrlKey?: boolean;
-	shiftKey?: boolean;
+interface KeyPressRequest {
+	keyCode: number;
+	longPress?: boolean;
 }
 ```
 
 ##### Response format
 ```typescript
-interface KeyDownResponse {
-	status: number;
-	error?: string;
-}
-```
-
-#### Key up
-
-##### Request topic
-
-`dab/system/input/key-up`
-
-##### Request format
-```typescript
-interface KeyUpRequest {
-	key: string;
-	altKey?: boolean;
-	ctrlKey?: boolean;
-	shiftKey?: boolean;
-}
-```
-
-##### Response format
-```typescript
-interface KeyUpResponse {
+interface KeyPressResponse {
 	status: number;
 	error?: string;
 }
