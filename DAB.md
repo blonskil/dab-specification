@@ -78,48 +78,30 @@ TODO need to describe the application lifecycle
 
 Application identifier consist of a sequence of characters. The lower case   letters "a"--"z", digits, and hyphen ("-") are allowed. For resiliency, upper case letters are equivalent to lower case (e.g., allow "netflix" is the same as "Netflix"). The minimum number of characters is 1 and the maximum is 64.
 
-### Listing all the Applications
+### Applications installed on the device
 
-Lists all the installed applications on the device.
+The device publishes a list of the installed applications to the retained notification topic. The client may want to subscribe to the topic to receive the notification whenever a new applicaiton is installed or the application is uninstalled.
 
-#### Request topic
+#### Notification topic (retained)
 
 `dab/appLifecycle/list`
 
-#### Request format
+#### Notification format
 
 ```typescript
-interface ListRequest {
-}
-```
-
-#### Response format
-
-```typescript
-interface ListResponse {
-	status: number;
-	error?: string;
-	apps?: string[];
+interface ListNotification {
+	apps: string[];
 }
 ```
 
 Parameter | Description
 --- | ---
-status | status code
-error | *optional* description of the error
-apps | a list application identifiers, *required* when the operation is successful
-
-#### Statuses
-Status | Description
---- | ---
-202 | OK, request accepted
-400 | bad request
+apps | a list application identifiers
 
 
-#### Sample response
+#### Sample notification
 ```json
 {
-	"status": 200,
 	"apps": [
 		"netflix",
 		"prime-video",
