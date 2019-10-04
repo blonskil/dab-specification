@@ -30,8 +30,17 @@ A component on the device under test that has access to the device's resources
 ### 3rd Party Applications
 Applications that can be installed or are pre-installed on the device under test
 
-## Request / Response Over MQTT
-All actions return the response on the defined topic. The response topic is always constructed as follows:
+## Message Types
+
+### Request / Response
+This is a traditional request/response model built on top of the MQTT protocol.
+
+The client publishes a message to a specific topic and includes a <request id>.
+The request is handled and the handler returns the response on the defined topic. The response topic is always constructed as follows:
+
+```$xslt
+'_response' + <original topic> + <request id>
+```
 
 In order to send a message to a request topic, the client needs to append the request_id to the topic.
 
@@ -49,9 +58,11 @@ mqtt.subscribe --topic '_response/dab/appLifecycle/list/## c0e1fb9d-03f9-4188-83
 mqtt.publish --topic 'dab/appLifecycle/list/## c0e1fb9d-03f9-4188-8350-5ba4acdea9f0' --payload '{}'
 ```
 
-## Unsolicited Messages / Notifications
+## Unsolicited Messages
+This is an unsolicited message that can be sent to communicate temporal messages like memory usage. In most cases, the client will subscribe to a topic where these messages are being sent. The client may or may not have to send a request for these messages to be enabled. Subscribing to the topic does not give the client a history or even the last published message - they will only get future messages.
 
-The device implementing the DAB protocol will publish unsolicited messages to the MQTT topics. These can be used to receive the updates about the changing state of a component on a device. These messages are published in a form of a retained message on the specified topic. 
+## Retained Messages
+Retained messages are a variation of unsolicited messages. They are used to communicate things like state. The difference is that the last message to the topic is "retained". When a client subscribed to a topic, they get the last message so they can sync up with the current state.
 
 ## Protocol Compliance
 
