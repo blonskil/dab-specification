@@ -314,7 +314,7 @@ Status | Description
 
 #### Notification Topic
 
-`dab/device`
+`dab/device/info`
 
 #### Message Format
 
@@ -399,7 +399,7 @@ TODO: need to specify the list of keyCodes
 
 ##### Request topic
 
-`dab/system/input/key-press`
+`dab/input/key-press`
 
 ##### Request format
 ```typescript
@@ -422,7 +422,7 @@ interface KeyPressResponse {
 #### Setting the language
 
 ##### Request topic
-`dab/system/language/set`
+`dab/system-language/set`
 
 ##### Request format
 ```typescript
@@ -452,7 +452,7 @@ interface SetLanguageResponse {
 
 ##### Request topic
 
-`dab/system/language/get/`
+`dab/system-language/get`
 
 ##### Request format
 
@@ -483,7 +483,7 @@ interface GetLanguageResponse {
 #### Listing available languages
 
 ##### Request topic
-`dab/system/language/list`
+`dab/system-language/list`
 
 ##### Request format
 
@@ -632,7 +632,7 @@ Invalid versions
 
 ### Notification topic
 
-`dab/version`
+`dab/version/get`
 
 ### Notification format
 
