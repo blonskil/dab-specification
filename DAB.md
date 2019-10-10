@@ -11,7 +11,25 @@ This document describes the protocol version **1.0**
 
 ## About the Specification
 
-The messages are in the JSON format.
+The messages are in the JSON format. The format of the messages is described using the Typescript language for the reader's convenience. Typescript itself is not a part of the specification. This document specifies the required and optional parameters needed in the payload to conform to the format. However, it is acceptable for the message to be a superset of the required and optional parameters to provide additional, undocumented information.
+
+For example, the payload
+
+```json
+{
+	"param1": "xyz",
+	"param2": "abc"
+}
+```
+
+is a valid payload of type Component, defined as:
+
+```typescript
+interface Component {
+	param1: string;
+	param3?: string;
+}
+```
 
 ## MQTT
 
@@ -38,7 +56,7 @@ This is a traditional request/response model built on top of the MQTT protocol.
 The client publishes a message to a specific topic and includes a <request id>.
 The request is handled and the handler returns the response on the defined topic. The response topic is always constructed as follows:
 
-```$xslt
+```
 '_response' + <original topic> + <request id>
 ```
 
@@ -70,13 +88,13 @@ In order for a device to be considered compliant with the protocol all operation
 
 ## Application Lifecycle
 
-The Application Lifecycle module is responsible for the lifecycle of the installed applications. There can only be one instance of an application running in the system and the instance is referenced by the application identifier. The protocol equips the devices with the telemetry capabilities that can be enabled during the application launch.
-
-TODO need to describe the application lifecycle
+The Application Lifecycle module is responsible for the lifecycle of the installed applications. There can only be one instance of an application running in the system and the instance is referenced by the application identifier. The protocol equips the devices with the telemetry capabilities that can be enabled using the telemetry commands.
 
 ### Application Identifier
 
-Application identifier consist of a sequence of characters. The lower case   letters "a"--"z", digits, and hyphen ("-") are allowed. For resiliency, upper case letters are equivalent to lower case (e.g., allow "netflix" is the same as "Netflix"). The minimum number of characters is 1 and the maximum is 64.
+Application identifier consist of a sequence of characters. The lower case  letters "a"--"z", digits, and hyphen ("-") are allowed. For resiliency, upper case letters are equivalent to lower case (e.g. allow "netflix" is the same as "Netflix"). The minimum number of characters is 1 and the maximum is 128.
+
+Application identifiers are issued by the device.
 
 ### Listing all the Applications
 
@@ -96,10 +114,24 @@ interface ListRequest {
 #### Response format
 
 ```typescript
+interface Application {
+	id: string;
+	friendlyName?: string;
+	version?: string;
+}
+```
+
+Parameter | Description
+--- | ---
+id | application identifier
+friendlyName | *optional* application friendly name
+version | *optional* application version
+
+```typescript
 interface ListResponse {
 	status: number;
 	error?: string;
-	apps?: string[];
+	apps: Application[];
 }
 ```
 
@@ -107,7 +139,7 @@ Parameter | Description
 --- | ---
 status | status code
 error | *optional* description of the error
-apps | a list application identifiers, *required* when the operation is successful
+apps | a list applications
 
 #### Statuses
 Status | Description
@@ -121,9 +153,22 @@ Status | Description
 {
 	"status": 200,
 	"apps": [
-		"netflix",
-		"prime-video",
-		"YouTube",
+
+		{
+			"id": "netflix",
+			"friendlyName": "Netflix",
+			"version": "2.0.0"
+		},
+		{
+			"id": "prime-video",
+			"friendlyName": "Prime Video",
+			"version": "2.0.0"
+		},
+		{
+			"id": "Youtube",
+			"friendlyName": "Youtube",
+			"version": "2.0.0"
+		}
 	]
 }
 ```
@@ -139,22 +184,16 @@ Launches an application.
 #### Request format
 
 ```typescript
-type Visibility = 'background' | 'foreground'
-
 interface LaunchApplicationRequest {
 	app: string;
 	parameters?: string;
-	mode?: Visibility;
-	telemetry?: TelemetryRequest;
 }
 ```
 
 Parameter | Default|  Description
 --- | --- | ---
 app | - | application id
-parameters |  | *optional*, parameters to pass to the application
-mode | foreground | *optional*, supported values: background, foreground
-telemetry | - | *optional*; see Telemetry section for the details. enables telemetry with the application
+parameters |  | *optional*, application specific parameters to pass (not part of the specification)
 
 #### Response format
 
@@ -206,28 +245,30 @@ Error:
 }
 ```
 
-### Killing the application
+### Exitting the application
 
 #### Request topic
 
-`dab/appLifecycle/kill`
+`dab/appLifecycle/exit`
 
 #### Request format
 
 ```typescript
-interface KillApplicationRequest {
+interface ExitApplicationRequest {
 	app: string;
+	force?: boolean;
 }
 ```
 
 Parameter | Default|  Description
 --- | --- | ---
 app | - | application identifier
+force | false | attempts to force stop the application
 
 #### Response format
 
 ```typescript
-interface KillApplicationResponse {
+interface ExitApplicationResponse {
 	status: number;
 	error?: string;
 }
@@ -243,70 +284,15 @@ Status | Description
 501 | action not implemented
 
 
-#### Example
-
-```
-mqtt: subscribe --topic _response/dab/appLifecycle/kill/x
-mqtt: publish --topic dab/appLifecycle/kill/x
-{
-	"app": "media-application-1"
-}
-
-mqtt: < received _resopnse/dab/appLifecycle/kill/x
-{
-	"status": 200
-}
-```
-
 #### Sample request
 
 request:
 ```json
 {
-	"app": "prime-video"
+	"app": "prime-video",
+	"force": true
 }
 ```
-
-### Setting the visibility
-
-#### Request topic
-
-`dab/appLifecycle/visibility`
-
-#### Request format
-
-```typescript
-type Visibility = 'background' | 'foreground'
-
-interface SetVisibilityRequest {
-	app: string;
-	mode: Visibility;
-}
-```
-
-Parameter | Description
---- |  ---
-app |  application identifier
-mode | visibility mode
-
-
-#### Response format
-
-```typescript
-interface SetVisibilityResponse {
-	status: number,
-	error?: string;
-}
-```
-
-#### Statuses
-
-Status | Description
---- | ---
-200 | OK, successful request
-400 | bad request
-501 | action not implemented
-
 
 ## System
 
@@ -514,46 +500,36 @@ interface GetAvailableLanguagesResponse {
 }
 ```
 
-## Telemetry
+## Application Telemetry
 
-### Discovery
+### Requesting telemetry
 
-To discover the available metrics in the system, the client needs to subscribe to `dab/telemetry`
+#### Request topic
 
-### Request format
+`dab/telemetry/start`
+
+#### Request format
 
 ```typescript
-type Frequency = 1 | 5 | 30;
-
-type Metric = "cpu" | "memory";
-
-interface TelemetryRequest {
-	frequency: Frequency;
-	metrics: Metric[];
+interface StartTelemetryRequest {
+	app: string;
 }
 ```
 
-Parameter | Description
+#### Response format
+
+```typescript
+interface StartTelemetryResponse {
+	status: number;
+	error?: string;
+}
+```
+
+#### Statuses
+Status | Description
 --- | ---
-frequency | sampling frequency, expressed in seconds
-metrics | a non-empty list of metrics to be published
-
-### Metrics
-
-| metric  | unit | description
-|---|---|---|
-| cpu | percentage | CPU usage
-| memory | kilobytes | Memory usage
-
-
-### Sample request
-
-```json
-{
-	"metrics" : ["cpu", "memory"],
-	"frequency": 5
-}
-```
+202 | OK, request accepted
+501 | action not implemented
 
 ### Telemetry delivery topics
 
@@ -566,18 +542,21 @@ where `<app_id>` is the application id as returned by the list.
 
 #### Example
 
-The application identified by 'media-player-1' in the system will have its metrics delivered to the topic `dab/telemetry/metrics/media-player-1`
+The application identified in the system by `media-player-1` will have its metrics delivered to the topic `dab/telemetry/metrics/media-player-1`
 
-### Message format
+### Metrics
 
 ```typescript
-interface Telemetry {
-	metrics: Metric[],
-	frequencies: Frequency[]
-}
+type Metric = "cpu" | "memory";
 ```
 
-The metrics are delivered to the topic that was specified during the app launch.
+| metric  | unit | description
+|---|---|---|
+| cpu | percentage | CPU usage
+| memory | kilobytes | Memory usage
+
+
+### Message format
 
 ```typescript
 interface TelemetryMessage {
@@ -610,6 +589,35 @@ value | value of the metric
 	"value": 44040192
 }
 ```
+
+### Stopping telemetry
+
+#### Request topic
+
+`dab/telemetry/stop`
+
+#### Request format
+
+```typescript
+interface StopTelemetryRequest {
+	app: string;
+}
+```
+
+#### Response format
+
+```typescript
+interface StopTelemetryResponse {
+	status: number;
+	error?: string;
+}
+```
+
+#### Statuses
+Status | Description
+--- | ---
+202 | OK, request accepted
+501 | action not implemented
 
 ## Versioning of the protocol
 
