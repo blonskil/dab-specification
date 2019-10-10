@@ -245,7 +245,7 @@ Error:
 }
 ```
 
-### Exitting the application
+### Exiting the application
 
 #### Request topic
 
